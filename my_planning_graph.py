@@ -429,6 +429,14 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Inconsistent Effects between nodes
+        for x in node_a1.action.effect_rem:
+            if x in node_a2.action.effect_add:
+                return True
+
+        for y in node_a1.action.effect_add:
+            if y in node_a2.action.effect_rem:
+                return True
+
         return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -446,6 +454,22 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Interference between nodes
+        for x1 in node_a1.action.effect_add:
+            if x1 in node_a2.action.precond_neg:
+                return True
+
+        for y1 in node_a1.action.effect_rem:
+            if y1 in node_a2.action.precond_pos:
+                return True
+
+        for x2 in node_a2.action.effect_add:
+            if x2 in node_a1.action.precond_neg:
+                return True
+
+        for y2 in node_a2.action.effect_rem:
+            if y2 in node_a1.action.precond_pos:
+                return True
+
         return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
@@ -460,6 +484,11 @@ class PlanningGraph():
         '''
 
         # TODO test for Competing Needs between nodes
+        for x in node_a1.parents:
+            for y in node_a2.parents:
+                if x.is_mutex(y):
+                    return True
+
         return False
 
     def update_s_mutex(self, nodeset: set):
@@ -495,6 +524,9 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for negation between nodes
+        if (node_s1.symbol == node_s2.symbol) and (node_s1.is_pos != node_s2.is_pos):
+            return True
+
         return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
@@ -514,6 +546,11 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Inconsistent Support between nodes
+        for x in node_s1.parents:
+            for y in node_s2.parents:
+                if (x.is_mutex(y) or y.is_mutex(x)):
+                    return True
+
         return False
 
     def h_levelsum(self) -> int:
