@@ -312,6 +312,36 @@ class PlanningGraph():
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
 
+        self.a_levels.append(set())  # prepare new a_layer
+
+        # get previous state layer
+        last_s_layer = self.s_levels[level]
+        for s in last_s_layer:
+            if s.is_pos:
+                clauses_pos = s.symbol
+            elif not s.is_pos:
+                clauses_neg = s.symbol
+
+        # add possible actions into action layer
+        for action in self.all_actions:
+            is_possible = True
+            for clause in action.precond_pos:
+                if clause not in clauses_pos:
+                    is_possible = False
+            for clause in action.precond_neg:
+                if clause not in clauses_neg:
+                    is_possible = False
+            if is_possible:
+                a_node = PgNode_a(action)
+                self.a_levels[level].add(a_node)
+
+        # set parents and children relationship
+        for s_node in self.s_levels[level]:
+            if s_node in a_node.prenodes:
+                a_node.parents.add(s_node)
+                s_node.children.add(a_node)
+
+
     def add_literal_level(self, level):
         ''' add an S (literal) level to the Planning Graph
 
@@ -329,6 +359,18 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+
+        self.s_levels.append(set()) # prepare new s_layer
+
+        last_a_layer = self.a_levels[level-1] # get last action layer
+
+        # create current s_layer from last a_layer effect nodes
+        for action in last_a_layer:
+            for s_node in action.effnodes:
+                self.s_levels[level].add(s_node)
+                # add parents and children relationship
+                s_node.parents.add(action)
+                action.children.add(s_node)
 
     def update_a_mutex(self, nodeset):
         ''' Determine and update sibling mutual exclusion for A-level nodes
