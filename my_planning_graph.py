@@ -312,27 +312,14 @@ class PlanningGraph():
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
 
-        self.a_levels.append(set())  # prepare new a_layer
-
-        # get previous state layer
-        last_s_layer = self.s_levels[level]
-        for s in last_s_layer:
-            if s.is_pos:
-                clauses_pos = s.symbol
-            elif not s.is_pos:
-                clauses_neg = s.symbol
-
-        # add possible actions into action layer
-        for action in self.all_actions:
-            is_possible = True
-            for clause in action.precond_pos:
-                if clause not in clauses_pos:
-                    is_possible = False
-            for clause in action.precond_neg:
-                if clause not in clauses_neg:
-                    is_possible = False
-            if is_possible:
-                a_node = PgNode_a(action)
+        self.a_levels.append(set()) # set of a_nodes
+        for a in self.all_actions:
+            a_node = PgNode_a(a)
+            if set(a_node.prenodes).issubset(set(self.s_levels[level])):
+                for s_node in self.s_levels[level]:
+                    if s_node in a_node.prenodes:
+                        a_node.parents.add(s_node)
+                        s_node.children.add(a_node)
                 self.a_levels[level].add(a_node)
 
         # set parents and children relationship
@@ -546,12 +533,16 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Inconsistent Support between nodes
-        for x in node_s1.parents:
-            for y in node_s2.parents:
-                if (x.is_mutex(y) or y.is_mutex(x)):
-                    return True
+        total = 0
 
-        return False
+        for x in node_s1.parents:
+            count = 0
+            for y in node_s2.parents:
+                if x.is_mutex(y):
+                    count += 1
+            if count == len(node_s2.parents):
+                total += 1
+        return total == len(node_s1.parents)
 
     def h_levelsum(self) -> int:
         '''The sum of the level costs of the individual goals (admissible if goals independent)
@@ -561,10 +552,18 @@ class PlanningGraph():
         level_sum = 0
         # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
-        for goal in list(self.problem.goal):
-            for layer in range(len(self.s_levels)):
-                if goal in [s.literal for s in self.s_levels[layer]]:
-                    level_sum += 1
-                    break
+        goal = list(self.problem.goal)
+        achieved_goal = []
+        level = 0
+
+        while (len(goal) > 0 and level < len(self.s_levels)):
+            for s in self.s_levels[level]:
+                for g in goal:
+                    if s.literal == g:
+                        achieved_goal.append(g)
+                        level_sum = level_sum + level
+
+            level = level + 1
+            goal = [g for g in goal if g not in achieved_goal]
 
         return level_sum
