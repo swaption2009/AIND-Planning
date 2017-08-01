@@ -552,18 +552,32 @@ class PlanningGraph():
         level_sum = 0
         # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
-        goal = list(self.problem.goal)
-        achieved_goal = []
-        level = 0
 
-        while (len(goal) > 0 and level < len(self.s_levels)):
-            for s in self.s_levels[level]:
-                for g in goal:
-                    if s.literal == g:
-                        achieved_goal.append(g)
-                        level_sum = level_sum + level
+        # goal = list(self.problem.goal)
+        # achieved_goal = []
+        # level = 0
+        #
+        # while (len(goal) > 0 and level < len(self.s_levels)):
+        #     for s in self.s_levels[level]:
+        #         for g in goal:
+        #             if s.literal == g:
+        #                 achieved_goal.append(g)
+        #                 level_sum = level_sum + level
+        #
+        #     level = level + 1
+        #     goal = [g for g in goal if g not in achieved_goal]
+        #
+        # return level_sum
 
-            level = level + 1
-            goal = [g for g in goal if g not in achieved_goal]
 
+        # Alternative
+        goals = self.problem.goal
+        s_levels = self.s_levels
+        for goal in goals:
+            node = PgNode_s(goal, True)
+            s_levels_list = enumerate(s_levels)
+            for level, s_nodes in s_levels_list:
+                if node in s_nodes:
+                    level_sum += level
+                    break
         return level_sum
